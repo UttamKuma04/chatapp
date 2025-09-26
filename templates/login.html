@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+
+{% block title %}Login - Chat-Room{% endblock title %}
+
+{% block content %}
+<div id="room-selection">
+  <div class="welcome-text">👋</div>
+
+  <div class="welcome-subtitle">
+    {% if messages %}
+        {% for message in messages %}
+            {{ message }}
+        {% endfor %}
+    {% else %}
+        Welcome back! Please log in to continue.
+    {% endif %}
+  </div>
+
+  <form method="POST">
+    {% csrf_token %}
+    
+    <div class="input-group">
+      <input type="email" name="email" class="input-field" placeholder="Email" required>
+    </div>
+    
+    <div class="input-group">
+      <input type="password" name="password" class="input-field" placeholder="Password" required>
+    </div>
+    
+    <button type="submit" class="join-btn">Login</button>
+  </form>
+  
+  <p class="welcome-subtitle" style="margin-top: 16px;">
+    Don't have an account? <a href="{% url 'register' %}" style="color: #25d366;">Register</a>
+  </p>
+</div>
+{% endblock content %}
+
+{% block scripts %}
+{# Override scripts block to prevent base.html's chat JS from running #}
+{% endblock scripts %}

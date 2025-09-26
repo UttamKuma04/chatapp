@@ -1,0 +1,993 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Chat-Room{% endblock title %}</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: #111b21;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #e9edef;
+    }
+
+    .container {
+      background: #222e35;
+      width: 100%;
+      max-width: 900px;
+      height: 100%;
+      max-height: 600px;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .header {
+      background: #2a3942;
+      padding: 16px 20px;
+      border-bottom: 1px solid #3b4a54;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .header-icon {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, #25d366, #128c7e);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+    }
+
+    .header h2 {
+      font-size: 19px;
+      font-weight: 500;
+      color: #e9edef;
+    }
+
+    .header-status {
+      font-size: 13px;
+      color: #8696a0;
+    }
+
+    #room-selection {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 40px;
+      text-align: center;
+    }
+
+    .welcome-text {
+      font-size: 32px;
+      margin-bottom: 12px;
+    }
+
+    .welcome-subtitle {
+      color: #8696a0;
+      margin-bottom: 32px;
+      font-size: 14px;
+    }
+
+    .input-group {
+      width: 100%;
+      max-width: 320px;
+      margin-bottom: 16px;
+    }
+
+    .input-field {
+      width: 100%;
+      padding: 14px 16px;
+      background: #2a3942;
+      border: 1px solid #3b4a54;
+      border-radius: 8px;
+      font-size: 15px;
+      color: #e9edef;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .input-field:focus {
+      border-color: #25d366;
+    }
+
+    .input-field::placeholder {
+      color: #8696a0;
+    }
+
+    .join-btn {
+      background: #25d366;
+      color: white;
+      border: none;
+      padding: 14px 32px;
+      border-radius: 24px;
+      font-size: 15px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.2s;
+      margin-top: 8px;
+    }
+
+    .join-btn:hover {
+      background: #1da851;
+    }
+
+    #chat-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 0; /* Fix applied here */
+    }
+
+    .chat-header {
+      background: #2a3942;
+      padding: 12px 16px;
+      border-bottom: 1px solid #3b4a54;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .chat-avatar {
+      width: 32px;
+      height: 32px;
+      background: linear-gradient(135deg, #25d366, #128c7e);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      color: white;
+    }
+
+    .chat-info h3 {
+      font-size: 16px;
+      font-weight: 500;
+      color: #e9edef;
+    }
+
+    .chat-status {
+      font-size: 12px;
+      color: #8696a0;
+    }
+
+    #chat-log {
+      flex: 1;
+      padding: 16px;
+      overflow-y: auto;
+      background: #0b141a;
+      background-image:
+        radial-gradient(circle at 25px 25px, rgba(255, 255, 255, 0.02) 2%, transparent 0%),
+        radial-gradient(circle at 75px 75px, rgba(255, 255, 255, 0.02) 2%, transparent 0%);
+      background-size: 100px 100px;
+      scrollbar-width: thin;
+      scrollbar-color: #3b4a54 transparent;
+    }
+
+    #chat-log::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    #chat-log::-webkit-scrollbar-thumb {
+      background: #3b4a54;
+      border-radius: 3px;
+    }
+
+    .message {
+      margin-bottom: 8px;
+      animation: messageSlide 0.3s ease;
+    }
+
+    @keyframes messageSlide {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .message-bubble {
+      max-width: 65%;
+      padding: 8px 12px;
+      border-radius: 8px;
+      position: relative;
+      word-wrap: break-word;
+    }
+
+    .message.sent {
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    .message.sent .message-bubble {
+      background: #005c4b;
+      color: #e9edef;
+      border-radius: 8px 8px 2px 8px;
+    }
+
+    .message.received {
+      display: flex;
+      justify-content: flex-start;
+    }
+
+    .message.received .message-bubble {
+      background: #202c33;
+      color: #e9edef;
+      border-radius: 8px 8px 8px 2px;
+    }
+
+    .message-header {
+      font-size: 12px;
+      font-weight: 500;
+      margin-bottom: 2px;
+      color: #8696a0;
+    }
+
+    .message.sent .message-header {
+      color: #b3d9ce;
+    }
+
+    .message-content {
+      font-size: 14px;
+      line-height: 1.4;
+    }
+
+    .message-time {
+      font-size: 11px;
+      color: #8696a0;
+      margin-top: 4px;
+      text-align: right;
+    }
+
+    .message.sent .message-time {
+      color: #b3d9ce;
+    }
+
+    .message img {
+      max-width: 200px;
+      max-height: 200px;
+      border-radius: 6px;
+      margin-top: 4px;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+
+    .message img:hover {
+      transform: scale(1.02);
+    }
+
+    .file-message {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 4px;
+      padding: 8px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 6px;
+    }
+
+    .file-icon {
+      width: 32px;
+      height: 32px;
+      background: #25d366;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+    }
+
+    .file-info {
+      flex: 1;
+    }
+
+    .file-name {
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    .file-size {
+      font-size: 11px;
+      color: #8696a0;
+    }
+
+    .message-input-area {
+      background: #2a3942;
+      padding: 8px 16px;
+      border-top: 1px solid #3b4a54;
+    }
+
+    .file-preview {
+      background: #202c33;
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 8px;
+      display: none;
+      animation: slideUp 0.3s ease;
+    }
+
+    .file-preview.show {
+      display: block;
+    }
+
+    @keyframes slideUp {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .file-preview-content {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .file-preview img {
+      width: 40px;
+      height: 40px;
+      border-radius: 4px;
+      object-fit: cover;
+    }
+
+    .preview-file-icon {
+      width: 40px;
+      height: 40px;
+      background: #25d366;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+    }
+
+    .file-preview-info {
+      flex: 1;
+    }
+
+    .file-preview-name {
+      font-size: 14px;
+      color: #e9edef;
+      margin-bottom: 2px;
+    }
+
+    .file-preview-size {
+      font-size: 12px;
+      color: #8696a0;
+    }
+
+    .file-preview-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .file-action-btn {
+      width: 32px;
+      height: 32px;
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s;
+    }
+
+    .send-file-btn {
+      background: #25d366;
+      color: white;
+    }
+
+    .cancel-file-btn {
+      background: #ea4335;
+      color: white;
+    }
+
+    .file-action-btn:hover {
+      opacity: 0.8;
+    }
+
+    .input-container {
+      display: flex;
+      align-items: flex-end;
+      gap: 8px;
+      position: relative;
+    }
+
+    .input-wrapper {
+      flex: 1;
+      background: #2a3942;
+      border-radius: 21px;
+      display: flex;
+      align-items: flex-end;
+      padding: 8px 12px;
+      border: 1px solid #3b4a54;
+      transition: border-color 0.2s;
+    }
+
+    .input-wrapper:focus-within {
+      border-color: #25d366;
+    }
+
+    .emoji-btn {
+      background: none;
+      border: none;
+      font-size: 20px;
+      cursor: pointer;
+      padding: 4px;
+      border-radius: 50%;
+      transition: background 0.2s;
+    }
+
+    .emoji-btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    #chat-message-input {
+      flex: 1;
+      background: none;
+      border: none;
+      outline: none;
+      font-size: 15px;
+      color: #e9edef;
+      resize: none;
+      max-height: 100px;
+      min-height: 20px;
+      line-height: 20px;
+      margin: 0 8px;
+    }
+
+    #chat-message-input::placeholder {
+      color: #8696a0;
+    }
+
+    .attach-btn, .send-btn {
+      width: 42px;
+      height: 42px;
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      transition: background 0.2s;
+    }
+
+    .attach-btn {
+      background: #2a3942;
+      color: #8696a0;
+    }
+
+    .attach-btn:hover {
+      background: #3b4a54;
+    }
+
+    .send-btn {
+      background: #25d366;
+      color: white;
+    } 
+
+    .send-btn:hover {
+      background: #1da851;
+    }
+
+    #file-input {
+      display: none;
+    }
+
+    .emoji-picker {
+      position: absolute;
+      bottom: 100%;
+      left: 0;
+      background: #2a3942;
+      border: 1px solid #3b4a54;
+      border-radius: 12px;
+      padding: 16px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      display: none;
+      z-index: 1000;
+      width: 320px;
+      max-height: 240px;
+      overflow-y: auto;
+    }
+
+    .emoji-picker.show {
+      display: block;
+      animation: popUp 0.2s ease;
+    }
+
+    @keyframes popUp {
+      from {
+        opacity: 0;
+        transform: scale(0.9) translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+      }
+    }
+
+    .emoji-grid {
+      display: grid;
+      grid-template-columns: repeat(8, 1fr);
+      gap: 8px;
+    }
+
+    .emoji {
+      font-size: 20px;
+      cursor: pointer;
+      padding: 8px;
+      border-radius: 6px;
+      text-align: center;
+      transition: background 0.2s;
+    }
+
+    .emoji:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .typing-indicator {
+      display: none;
+      padding: 8px 16px;
+      font-size: 13px;
+      color: #8696a0;
+      font-style: italic;
+    }
+    
+    /* --- Styles for responsive design --- */
+    @media (max-width: 768px) {
+      body {
+        /* Remove alignment properties to allow the container to fill the screen */
+        align-items: initial;
+        justify-content: initial;
+      }
+      
+      .container {
+        border-radius: 0;
+        height: 100vh;
+        max-height: none;
+        box-shadow: none;
+      }
+      
+      #room-selection {
+        padding: 24px;
+      }
+
+      .message-bubble {
+        max-width: 85%; /* Use more horizontal space */
+      }
+      
+      .message-input-area {
+        padding: 8px;
+      }
+
+      .emoji-picker {
+        width: 100%;
+        box-sizing: border-box;
+        left: 0;
+        bottom: calc(100% + 5px); /* Position above the input area */
+        max-height: 220px;
+        border-radius: 12px 12px 0 0;
+      }
+
+      .emoji-grid {
+        /* Creates a flexible grid that fits as many emojis as possible */
+        grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="header-icon">💬</div>
+      <div>
+        <h2>Chat</h2>
+        <div class="header-status">Secure messaging</div>
+      </div>
+    </div>
+
+    {% block content %}
+    <div id="room-selection">
+      <div class="welcome-text">👋</div>
+      <div class="welcome-subtitle">Welcome to Chat! Enter your details to start messaging.</div>
+      
+      <div class="input-group">
+        <input id="username-input" type="text" placeholder="Your name"
+            class="input-field"
+            value="{{ request.user.username }}"
+            readonly>
+        </div>
+
+      <div class="input-group">
+        <input id="room-name-input" type="text" placeholder="Room name" class="input-field">
+      </div>
+      
+      <button id="join-room" class="join-btn">Start Messaging</button>
+    </div>
+
+    <div id="chat-container" style="display:none;">
+      <div class="chat-header">
+        <div class="chat-avatar" id="room-avatar"></div>
+        <div class="chat-info">
+          <h3 id="room-title"></h3>
+          <div class="chat-status">Online</div>
+        </div>
+      </div>
+
+      <div id="chat-log"></div>
+      
+      <div class="typing-indicator" id="typing-indicator">
+        Someone is typing...
+      </div>
+
+      <div class="message-input-area">
+        <div class="file-preview" id="file-preview">
+          <div class="file-preview-content">
+            <div id="file-preview-image"></div>
+            <div class="file-preview-info">
+              <div class="file-preview-name" id="file-preview-name"></div>
+              <div class="file-preview-size" id="file-preview-size"></div>
+            </div>
+            <div class="file-preview-actions">
+              <button class="file-action-btn send-file-btn" id="send-file-btn">✓</button>
+              <button class="file-action-btn cancel-file-btn" id="cancel-file-btn">✕</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="input-container">
+          <div class="input-wrapper">
+            <button class="emoji-btn" id="emoji-btn">😊</button>
+            <textarea id="chat-message-input" placeholder="Type a message" rows="1"></textarea>
+          </div>
+          
+          <div class="emoji-picker" id="emoji-picker">
+            <div class="emoji-grid" id="emoji-grid"></div>
+          </div>
+          
+          <button class="attach-btn" id="file-btn">📎</button>
+          <button class="send-btn" id="chat-message-submit">➤</button>
+          
+          <input type="file" id="file-input" accept="image/*,video/*,.pdf,.doc,.docx,.txt" multiple>
+        </div>
+      </div>
+    </div>
+    {% endblock content %}
+  </div>
+
+  {% block scripts %}
+  <script>
+    const usernameInput = document.querySelector("#username-input");
+    const roomInput = document.querySelector("#room-name-input");
+    const joinButton = document.querySelector("#join-room");
+    const chatContainer = document.querySelector("#chat-container");
+    const chatLog = document.querySelector("#chat-log");
+    const chatInput = document.querySelector("#chat-message-input");
+    const chatButton = document.querySelector("#chat-message-submit");
+    const fileInput = document.querySelector("#file-input");
+    const fileBtn = document.querySelector("#file-btn");
+    const emojiBtn = document.querySelector("#emoji-btn");
+    const emojiPicker = document.querySelector("#emoji-picker");
+    const emojiGrid = document.querySelector("#emoji-grid");
+    const filePreview = document.querySelector("#file-preview");
+    const sendFileBtn = document.querySelector("#send-file-btn");
+    const cancelFileBtn = document.querySelector("#cancel-file-btn");
+
+    let chatSocket;
+    let username;
+    let selectedFile = null;
+
+    // Popular emojis
+    const emojis = [
+      '😀', '😃', '😄', '😁', '😅', '😂', '🤣', '😊',
+      '😇', '🙂', '🙃', '😉', '😌', '😍', '🥰', '😘',
+      '😗', '😙', '😚', '😋', '😛', '🤪', '😜', '🤨',
+      '🧐', '🤓', '😎', '🤩', '🥳', '😏', '😒', '😞',
+      '😔', '😟', '😕', '🙁', '☹️', '😣', '😖', '😫',
+      '😩', '🥺', '😢', '😭', '😤', '😠', '😡', '🤬',
+      '🤯', '😳', '🥵', '🥶', '😱', '😨', '😰', '😥',
+      '👍', '👎', '👌', '✌️', '🤞', '🤟', '🤘', '🤙',
+      '👈', '👉', '👆', '👇', '☝️', '✋', '🤚', '🖖',
+      '👋', '🤝', '👏', '🙌', '👐', '🤲', '🤜', '🤛',
+      '✊', '👊', '🤚', '👎', '👍', '🙏', '✍️', '💪',
+      '❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍',
+      '💔', '❣️', '💕', '💞', '💓', '💗', '💖', '💘',
+      '💯', '💢', '💥', '💫', '💦', '💨', '🔥', '✨'
+    ];
+
+    // Initialize emoji picker
+    function initEmojiPicker() {
+      emojiGrid.innerHTML = '';
+      emojis.forEach(emoji => {
+        const emojiElement = document.createElement('span');
+        emojiElement.className = 'emoji';
+        emojiElement.textContent = emoji;
+        emojiElement.onclick = () => {
+          chatInput.value += emoji;
+          emojiPicker.classList.remove('show');
+          chatInput.focus();
+        };
+        emojiGrid.appendChild(emojiElement);
+      });
+    }
+
+    // Auto-resize textarea
+    function autoResizeTextarea() {
+      chatInput.style.height = 'auto';
+      chatInput.style.height = Math.min(chatInput.scrollHeight, 100) + 'px';
+    }
+
+    // Format file size
+    function formatFileSize(bytes) {
+      if (bytes === 0) return '0 Bytes';
+      const k = 1024;
+      const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    // Get current time
+    function getCurrentTime() {
+      return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+
+    // Show file preview
+    function showFilePreview(file) {
+      selectedFile = file;
+      document.getElementById('file-preview-name').textContent = file.name;
+      document.getElementById('file-preview-size').textContent = formatFileSize(file.size);
+      
+      const previewImage = document.getElementById('file-preview-image');
+      previewImage.innerHTML = '';
+      
+      if (file.type.startsWith('image/')) {
+        const img = document.createElement('img');
+        img.src = URL.createObjectURL(file);
+        img.onload = () => URL.revokeObjectURL(img.src);
+        previewImage.appendChild(img);
+      } else {
+        const fileIcon = document.createElement('div');
+        fileIcon.className = 'preview-file-icon';
+        fileIcon.innerHTML = '📄';
+        previewImage.appendChild(fileIcon);
+      }
+      
+      filePreview.classList.add('show');
+    }
+
+    // Hide file preview
+    function hideFilePreview() {
+      filePreview.classList.remove('show');
+      selectedFile = null;
+      fileInput.value = '';
+    }
+
+    // Send file
+    function sendFile() {
+      if (!selectedFile || !chatSocket) return;
+      
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const fileData = {
+          username: username,
+          message: `📎 ${selectedFile.name}`,
+          file: {
+            name: selectedFile.name,
+            type: selectedFile.type,
+            size: selectedFile.size,
+            data: e.target.result
+          },
+          timestamp: getCurrentTime()
+        };
+        
+        chatSocket.send(JSON.stringify(fileData));
+        hideFilePreview();
+      };
+      
+      reader.readAsDataURL(selectedFile);
+    }
+
+    // Display message
+    function displayMessage(data) {
+      const msg = document.createElement("div");
+      const isSent = data.username === username;
+      msg.className = `message ${isSent ? 'sent' : 'received'}`;
+      
+      const bubble = document.createElement("div");
+      bubble.className = "message-bubble";
+      
+      let content = '';
+      if (!isSent) {
+        content += `<div class="message-header">${data.username}</div>`;
+      }
+      
+      if (data.file) {
+        if (data.file.type.startsWith('image/')) {
+          content += `
+            <div class="message-content">${data.message}</div>
+            <img src="${data.file.data}" alt="${data.file.name}" onclick="window.open(this.src, '_blank')">
+          `;
+        } else {
+          content += `
+            <div class="message-content">${data.message}</div>
+            <div class="file-message">
+              <div class="file-icon">📄</div>
+              <div class="file-info">
+                <div class="file-name">${data.file.name}</div>
+                <div class="file-size">${formatFileSize(data.file.size)}</div>
+              </div>
+            </div>
+          `;
+        }
+      } else {
+        content += `<div class="message-content">${data.message}</div>`;
+      }
+      
+      content += `<div class="message-time">${data.timestamp || getCurrentTime()}</div>`;
+      
+      bubble.innerHTML = content;
+      msg.appendChild(bubble);
+      chatLog.appendChild(msg);
+      chatLog.scrollTop = chatLog.scrollHeight;
+    }
+
+    // Event listeners
+    if(joinButton) {
+        joinButton.onclick = function() {
+        username = usernameInput.value.trim();
+        const roomName = roomInput.value.trim();
+
+        if (!username) {
+          alert("Please enter your name!");
+          return;
+        }
+        if (!roomName) {
+          alert("Please enter a room name!");
+          return;
+        }
+
+        document.getElementById("room-selection").style.display = "none";
+        chatContainer.style.display = "flex";
+        
+        // Update room info
+        document.getElementById('room-avatar').textContent = roomName.charAt(0).toUpperCase();
+        document.getElementById('room-title').textContent = roomName;
+        
+        initEmojiPicker();
+
+        const wsScheme = window.location.protocol === "https:" ? "wss" : "ws";
+        chatSocket = new WebSocket(wsScheme + "://" + window.location.host + "/ws/chat/" + roomName + "/");
+
+        chatSocket.onmessage = function(e) {
+          const data = JSON.parse(e.data);
+          displayMessage(data);
+        };
+
+        chatSocket.onclose = function(e) {
+          console.error("Chat socket closed unexpectedly");
+        };
+      };
+    }
+
+    if(chatButton){
+        chatButton.onclick = function() {
+        const message = chatInput.value.trim();
+        if (message !== "" && chatSocket) {
+          chatSocket.send(JSON.stringify({
+            "username": username,
+            "message": message,
+            "timestamp": getCurrentTime()
+          }));
+          chatInput.value = "";
+          autoResizeTextarea();
+        }
+      };
+    }
+
+    // File input events
+    if(fileBtn) fileBtn.onclick = () => fileInput.click();
+    
+    if(fileInput){
+        fileInput.onchange = function(e) {
+            if (e.target.files.length > 0) {
+                showFilePreview(e.target.files[0]);
+            }
+        };
+    }
+
+    if(sendFileBtn) sendFileBtn.onclick = sendFile;
+    if(cancelFileBtn) cancelFileBtn.onclick = hideFilePreview;
+
+    // Emoji picker events
+    if(emojiBtn){
+        emojiBtn.onclick = function(e) {
+            e.stopPropagation();
+            emojiPicker.classList.toggle('show');
+        };
+    }
+
+    // Close emoji picker when clicking outside
+    document.onclick = function(e) {
+      if (emojiPicker && !emojiPicker.contains(e.target) && e.target !== emojiBtn) {
+        emojiPicker.classList.remove('show');
+      }
+    };
+
+    // Textarea events
+    if(chatInput){
+        chatInput.oninput = autoResizeTextarea;
+        
+        chatInput.addEventListener("keypress", function(e) {
+            if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                chatButton.click();
+            }
+        });
+    }
+
+
+    // Navigation events
+    if(usernameInput){
+        usernameInput.addEventListener("keypress", function(e) {
+            if (e.key === "Enter") {
+                roomInput.focus();
+            }
+        });
+    }
+
+    if(roomInput){
+        roomInput.addEventListener("keypress", function(e) {
+            if (e.key === "Enter") {
+                joinButton.click();
+            }
+        });
+    }
+
+
+    // Drag and drop file upload
+    if(chatLog){
+        chatLog.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        });
+
+        chatLog.addEventListener('drop', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                showFilePreview(files[0]);
+            }
+        });
+    }
+  </script>
+  {% endblock scripts %}
+</body>
+</html>

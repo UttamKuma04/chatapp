@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+
+{% block title %}Create Account - Chat-Room{% endblock title %}
+
+{% block content %}
+<div id="room-selection">
+  <div class="welcome-text">🚀</div>
+
+  <!-- Dynamic welcome subtitle -->
+  <div class="welcome-subtitle">
+    {% if messages %}
+        {% for message in messages %}
+            {{ message }}
+        {% endfor %}
+    {% else %}
+        Create your account to start chatting.
+    {% endif %}
+  </div>
+
+  <form method="post" action="{% url 'register' %}">
+    {% csrf_token %}
+    
+    <div class="input-group">
+      <input type="text" name="username" class="input-field" placeholder="Username" required>
+    </div>
+    
+    <div class="input-group">
+      <input type="email" name="email" class="input-field" placeholder="Email" required>
+    </div>
+    
+    <div class="input-group">
+      <input type="password" name="password" class="input-field" placeholder="Password" required>
+    </div>
+    
+    <div class="input-group">
+      <input type="password" name="confirmation" class="input-field" placeholder="Confirm Password" required>
+    </div>
+        
+    <button type="submit" class="join-btn">Create Account</button>
+  </form>
+
+  <p class="welcome-subtitle" style="margin-top: 16px;">
+    Already have an account? <a href="{% url 'login' %}" style="color: #25d366; text-decoration: none;">Log In</a>
+  </p>
+</div>
+{% endblock content %}
+
+{% block scripts %}
+{# This block is empty to prevent chat JS from running on this page. #}
+{% endblock scripts %}
