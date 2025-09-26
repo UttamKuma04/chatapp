@@ -20,7 +20,7 @@ ALLOWED_HOSTS = ["*"]
 
 # CSRF Trusted Origins (must match your Render URL)
 CSRF_TRUSTED_ORIGINS = [
-    "https://chatapp-5.onrender.com",
+    "https://chatapp-6.onrender.com",
 ]
 
 # Application definition
