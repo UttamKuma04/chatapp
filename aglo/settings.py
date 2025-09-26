@@ -28,7 +28,7 @@ DEBUG = False
 ALLOWED_HOSTS = ["*"]
 
 CSRF_TRUSTED_ORIGINS = [
-    "https://uttam-booking-4.onrender.com"
+    "https://uttam-chatapp-1.onrender.com"
 ]
 
 
