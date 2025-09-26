@@ -28,8 +28,9 @@ DEBUG = False
 ALLOWED_HOSTS = ["*"]
 
 CSRF_TRUSTED_ORIGINS = [
-    "https://uttam-chatapp-1.onrender.com"
+    'https://chatapp-2-pvv5.onrender.com',
 ]
+
 
 
 # Application definition
