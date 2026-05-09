@@ -1,5 +1,4 @@
 from django.db import models
-from django.contrib.auth.models import AbstractUser
 
 class ChatMessage(models.Model):
     room_name = models.CharField(max_length=255)
@@ -9,7 +8,3 @@ class ChatMessage(models.Model):
 
     def __str__(self):
         return f"[{self.room_name}] {self.username}: {self.message}"
-
-
-
-    

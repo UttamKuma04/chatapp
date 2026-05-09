@@ -2,80 +2,63 @@
 import json
 from channels.generic.websocket import AsyncWebsocketConsumer
 from asgiref.sync import sync_to_async
+from .models import ChatMessage
 
 class ChatConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         self.room_name = self.scope["url_route"]["kwargs"]["room_name"]
         self.room_group_name = f"chat_{self.room_name}"
-
-        await self.channel_layer.group_add(
-            self.room_group_name,
-            self.channel_name
-        )
+        await self.channel_layer.group_add(self.room_group_name, self.channel_name)
         await self.accept()
 
-        # Import models inside async method
-        from .models import ChatMessage
-
-        # Send last 50 messages
         messages = await sync_to_async(list)(
-            ChatMessage.objects.filter(room_name=self.room_name)
-            .order_by('-timestamp')[:50]
+            ChatMessage.objects.filter(room_name=self.room_name).order_by('timestamp').all()[:50]
         )
-        for msg in reversed(messages):
+        for msg in messages:
             await self.send(text_data=json.dumps({
+                "type": "chat_message",
                 "message": msg.message,
                 "username": msg.username,
-                # Format timestamp like "2025-09-26 18:07"
-                "timestamp": msg.timestamp.strftime("%Y-%m-%d %H:%M")
+                "timestamp": msg.timestamp.strftime("%I:%M %p")
             }))
 
     async def disconnect(self, close_code):
-        await self.channel_layer.group_discard(
-            self.room_group_name,
-            self.channel_name
-        )
+        await self.channel_layer.group_discard(self.room_group_name, self.channel_name)
 
-    async def receive(self, text_data=None, bytes_data=None):
-        if text_data is None:
-            return
-
-        try:
-            data = json.loads(text_data)
-        except json.JSONDecodeError:
-            await self.send(text_data=json.dumps({"error": "Invalid JSON"}))
-            return
-
-        message = data.get("message")
-        username = data.get("username", "Anonymous")
-
-        if not message:
-            await self.send(text_data=json.dumps({"error": "No message provided"}))
-            return
-
-        from .models import ChatMessage
-
-        # Save message
-        msg_obj = await sync_to_async(ChatMessage.objects.create)(
-            room_name=self.room_name,
-            username=username,
-            message=message
-        )
-
-        # Broadcast
+    async def receive(self, text_data):
+        data = json.loads(text_data)
+        message_type = data.get('type', 'chat_message')
+        
+        # Add sender's channel name to the data for targeting later
+        data['sender_channel'] = self.channel_name
+        
+        # Forward the entire payload to the group
         await self.channel_layer.group_send(
             self.room_group_name,
             {
-                "type": "chat_message",
-                "message": message,
-                "username": username,
-                "timestamp": msg_obj.timestamp.strftime("%Y-%m-%d %H:%M")
+                'type': 'broadcast_message', # A single handler for broadcasting
+                'data': data
             }
         )
 
-    async def chat_message(self, event):
-        await self.send(text_data=json.dumps({
-            "message": event["message"],
-            "username": event["username"],
-            "timestamp": event.get("timestamp")  # already formatted
-        }))
+    async def broadcast_message(self, event):
+        message_data = event['data']
+        sender_channel = message_data.get('sender_channel')
+        message_type = message_data.get('type')
+        
+        # Don't send initiation signals back to the sender
+        if self.channel_name != sender_channel or message_type in ['offer', 'answer', 'candidate', 'end_call']:
+            # Special logic for call initiation signals to avoid self-ringing
+            if message_type in ['make_call', 'cancel_call', 'decline_call']:
+                 if self.channel_name == sender_channel:
+                    return # Don't send these to the original sender
+            
+            await self.send(text_data=json.dumps(message_data))
+        
+        # Always save chat messages
+        if message_type == 'chat_message':
+             await sync_to_async(ChatMessage.objects.create)(
+                room_name=self.room_name,
+                username=message_data['username'],
+                message=message_data['message']
+            )

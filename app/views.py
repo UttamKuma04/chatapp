@@ -5,6 +5,12 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import authenticate, login as auth_login
+from django.shortcuts import render
+from django.contrib.auth.decorators import login_required
+from django.http import JsonResponse
+from django.core.files.storage import default_storage
+from django.core.files.base import ContentFile
+from django.views.decorators.csrf import csrf_exempt
 
 
 def login_view(request):
@@ -63,3 +69,34 @@ def register(request):
 @login_required
 def home(request):
     return render(request, "base.html")
+
+# --- ADD THIS NEW VIEW ---
+@login_required # Protect the upload view
+@csrf_exempt # Use this for simplicity; consider proper CSRF setup for production
+def upload_file_view(request):
+    if request.method == 'POST' and request.FILES.get('file'):
+        try:
+            uploaded_file = request.FILES['file']
+            
+            # Save the file to your media directory
+            path = default_storage.save(f'chat_files/{uploaded_file.name}', ContentFile(uploaded_file.read()))
+            file_url = default_storage.url(path)
+
+            # Prepare the data in the format your JavaScript expects
+            message_data = {
+                'message': request.POST.get('message', ''),
+                'file_url': file_url,
+                'file_name': uploaded_file.name,
+                'file_type': uploaded_file.content_type,
+                'file_size': uploaded_file.size,
+            }
+
+            # Return a JSON response on success
+            return JsonResponse({'status': 'success', 'message_data': message_data})
+
+        except Exception as e:
+            # Return a JSON error if something goes wrong
+            return JsonResponse({'status': 'error', 'error': str(e)}, status=500)
+
+    # Return a JSON error for bad requests (e.g., not a POST request)
+    return JsonResponse({'status': 'error', 'error': 'Invalid request'}, status=400)
